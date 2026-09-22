@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lucky Spin v20</title>
+<title>Lucky Spin v22</title>
 <style>
 :root{--ink:#1f2740;--muted:#7b849c;--violet:#7657ee;--pink:#ff648c;--line:#e9e9f3}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef9ff 0%,#f6efff 47%,#fff8e4 100%);overflow-x:hidden}
@@ -167,7 +167,32 @@ spin.onclick=()=>{let a=active();if(!a.length||spinning)return;spinning=true;edi
  // every animation frame and detect when the sector index at the pointer changes.
  let boundaryRAF=null,lastBoundaryIndex=null;
  const pointerTip=pointer;
+ let audioCtx=null;
+ function unlockAudio(){
+   try{
+     const AC=window.AudioContext||window.webkitAudioContext;
+     if(!AC) return;
+     if(!audioCtx) audioCtx=new AC();
+     if(audioCtx.state==="suspended") audioCtx.resume().catch(()=>{});
+   }catch(e){}
+ }
+ function playTick(){
+   try{
+     if(!audioCtx || audioCtx.state!=="running") return;
+     const now=audioCtx.currentTime;
+     const osc=audioCtx.createOscillator();
+     const gain=audioCtx.createGain();
+     osc.type="square";
+     osc.frequency.setValueAtTime(700,now);
+     osc.frequency.exponentialRampToValueAtTime(230,now+.025);
+     gain.gain.setValueAtTime(.045,now);
+     gain.gain.exponentialRampToValueAtTime(.001,now+.035);
+     osc.connect(gain); gain.connect(audioCtx.destination);
+     osc.start(now); osc.stop(now+.04);
+   }catch(e){}
+ }
  function flickPointer(){
+   playTick();
    pointerTip.getAnimations().forEach(anim=>anim.cancel());
    pointerTip.animate([
      {transform:"rotate(0deg)"},
@@ -228,4 +253,11 @@ setTimeout(()=>{pointer?.animate([
  {transform:"rotate(8deg)"},
  {transform:"rotate(0deg)"}
 ],{duration:500,easing:"ease-out"});},700);
+
+// v22: audio initialization is isolated from the spin handler.
+// Even if Web Audio is unavailable, the wheel click behavior remains untouched.
+const centerSpinControl=document.getElementById("spin");
+if(centerSpinControl){
+  centerSpinControl.addEventListener("pointerdown",unlockAudio,{passive:true});
+}
 </script></body></html>
