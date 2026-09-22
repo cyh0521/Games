@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lucky Spin v11</title>
+<style>
+:root{--ink:#1f2740;--muted:#7b849c;--violet:#7657ee;--pink:#ff648c;--line:#e9e9f3}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef9ff 0%,#f6efff 47%,#fff8e4 100%);overflow-x:hidden}
+body:before,body:after{content:"";position:fixed;border-radius:50%;z-index:-1;filter:blur(2px)}body:before{width:420px;height:420px;left:-190px;top:-130px;background:#a9eaff55}body:after{width:430px;height:430px;right:-160px;bottom:-190px;background:#ffb3cf55}
+header{text-align:center;padding:28px 16px 18px}h1{margin:0;font-size:clamp(32px,4vw,50px);font-weight:1000;letter-spacing:.055em;background:linear-gradient(90deg,#5e54df,#ec5c91);-webkit-background-clip:text;color:transparent}
+.shell{max-width:1190px;margin:auto;padding:28px 20px 35px;display:grid;grid-template-columns:390px 1fr;gap:25px;align-items:stretch}
+.panel{background:#ffffffd9;border:1px solid #ffffff;box-shadow:0 22px 65px #3c416a1a;backdrop-filter:blur(18px);border-radius:30px}
+.editor{padding:25px;display:flex;flex-direction:column;min-height:650px}.panelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.panelHead h2{font-size:19px;margin:0}.badge{font-size:12px;font-weight:900;padding:7px 11px;border-radius:999px;color:#6758d7;background:#f0edff}
+.items{display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:460px;padding:3px 5px 5px 2px}.item{display:grid;grid-template-columns:1fr 30px;align-items:center;gap:9px}.del{width:27px;height:27px;border:0;border-radius:50%;background:#f5f3f8;color:#a5a1af;cursor:pointer;font-size:18px;line-height:1;transition:.18s}.del:hover{background:#ffe7ed;color:#ed5677;transform:scale(1.07)}
+.inputWrap{position:relative}.num{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:900;color:#aaa5bd;background:#f2f0fa;border-radius:8px;padding:3px 6px}.item input{width:100%;height:46px;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:0 13px 0 46px;font:700 15px inherit;color:var(--ink);outline:0;transition:.18s}.item input:focus{border-color:#9886ef;box-shadow:0 0 0 4px #8b76ef13}.editor.spinning .item input{pointer-events:none;background:#f6f5fa;color:#8d91a0;border-color:#ecebf3}.editor.spinning .del,.editor.spinning .add{pointer-events:none;opacity:.3}.item.active input{background:#fff8d9!important;border-color:#f0bf3d!important;box-shadow:0 0 0 5px #ffd95a25,0 8px 22px #e9b83e22;color:#55451b!important;transform:translateX(3px)}.item.winner input{background:#fff0f5!important;border-color:#ef5f8d!important;box-shadow:0 0 0 6px #ef5f8d20,0 10px 28px #d94e7b28;color:#b93261!important;font-weight:1000}.item{transition:.18s}.item input{transition:.18s}
+.add{margin-top:14px;width:100%;height:48px;border:1.5px dashed #c8c1ee;border-radius:15px;background:#f9f8ff;color:#6957d9;font:900 14px inherit;cursor:pointer;transition:.18s}.add:hover{background:#f1eeff;border-color:#8c79e6}.add:disabled{opacity:.4;cursor:not-allowed}
+.bottom{margin-top:auto;padding-top:19px;border-top:1px solid #eeeef5}.toggle{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800}.switch{position:relative;width:46px;height:26px}.switch input{display:none}.slider{position:absolute;inset:0;background:#ddddea;border-radius:99px;cursor:pointer;transition:.2s}.slider:after{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:white;border-radius:50%;box-shadow:0 2px 6px #0002;transition:.2s}.switch input:checked+.slider{background:linear-gradient(90deg,#7760e9,#e9679a)}.switch input:checked+.slider:after{transform:translateX(20px)}
+.stage{min-height:650px;padding:27px;display:flex;flex-direction:column;align-items:center;justify-content:center}.wheelbox{position:relative;width:min(555px,73vw);aspect-ratio:1}.pointer{position:absolute;z-index:6;top:-19px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:38px solid #ed3e68;filter:drop-shadow(0 6px 4px #422c5b35)}.pointer:before,.pointer:after{display:none} /* tip points down into wheel */
+canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow(0 20px 24px #3642672c);transition:transform 5.4s cubic-bezier(.12,.64,.12,1)}
+.hub{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:118px;height:118px;border-radius:50%;background:#fff;border:9px solid #fff;box-shadow:0 10px 30px #34395b40,inset 0 0 0 2px #f0eff8;display:grid;place-items:center;font-size:20px;font-weight:1000;color:#6758d9;letter-spacing:.05em;overflow:hidden}.hub:before{content:"";position:absolute;inset:9px;border-radius:50%;background:linear-gradient(145deg,#fff,#f0eff8);z-index:-1}
+.spin{margin-top:22px;min-width:190px;height:54px;border:0;border-radius:999px;background:linear-gradient(100deg,#6b5ae5,#e85d95);color:#fff;font:1000 17px inherit;letter-spacing:.06em;box-shadow:0 12px 28px #765de34a;cursor:pointer;transition:.16s}.spin:hover{transform:translateY(-2px);box-shadow:0 15px 32px #765de358}.spin:disabled{opacity:.45;transform:none;cursor:not-allowed}
+.result{height:38px;margin-top:13px;font-weight:900;font-size:17px;text-align:center}.result strong{font-size:24px;color:#ed507d}
+.history{max-width:1190px;margin:0 auto 35px;padding:0 20px}.history .panel{padding:19px 23px}.history h2{font-size:16px;margin:0 0 12px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{font-size:13px;font-weight:800;padding:8px 12px;background:#fff;border:1px solid #ecebf3;border-radius:999px}.empty{font-size:13px;color:#9aa0b1}
+.confetti{position:fixed;top:-20px;width:9px;height:15px;z-index:20;animation:fall 1.8s linear forwards}@keyframes fall{to{transform:translate(var(--x),105vh) rotate(720deg);opacity:.2}}
+@media(max-width:850px){.shell{grid-template-columns:1fr}.stage{order:-1;min-height:auto}.editor{min-height:500px}.wheelbox{width:min(86vw,530px)}}
+
+/* v9 hard overrides */
+.pointer{
+  position:absolute!important; z-index:20!important;
+  left:-22px!important; right:auto!important;
+  top:50%!important; bottom:auto!important;
+  transform:translateY(-50%)!important;
+  width:0!important; height:0!important;
+  border-top:18px solid transparent!important;
+  border-bottom:18px solid transparent!important;
+  border-left:40px solid #ed3e68!important;
+  border-right:0!important;
+  filter:drop-shadow(5px 0 4px #422c5b35)!important;
+}
+.pointer:before,.pointer:after{display:none!important}
+</style></head>
+<body>
+
+<main class="shell">
+<section class="panel editor">
+ 
+ <div class="items" id="items"></div>
+ <button class="add" id="add">＋ 新增備選項目（最多20選項）</button>
+ <div class="bottom"><div class="toggle"><span>抽中後移除</span><label class="switch"><input type="checkbox" id="remove"><span class="slider"></span></label></div></div>
+</section>
+<section class="panel stage">
+ <div class="wheelbox"><div class="pointer"></div><canvas id="wheel" width="800" height="800"></canvas><div class="hub">SPIN</div></div>
+ <button class="spin" id="spin">開始轉動</button><div class="result" id="result">準備好了嗎？</div>
+</section>
+</main>
+<section class="history"><div class="panel"><h2>抽選紀錄</h2><div class="chips" id="history"><span class="empty">尚無紀錄</span></div></div></section>
+<script>
+const palette=["#ff657d","#ffad4d","#f3cf4d","#69cf98","#54bfe0","#7184ef","#9a70e8","#e76fb1","#ff8860","#83c96b"];
+const pointer=document.querySelector(".pointer"),editor=document.querySelector(".editor"),list=document.querySelector("#items"),add=document.querySelector("#add"),canvas=document.querySelector("#wheel"),ctx=canvas.getContext("2d"),spin=document.querySelector("#spin"),res=document.querySelector("#result"),hist=document.querySelector("#history");
+let values=[],rotation=0,spinning=false,records=[];
+function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function renderInputs(focusLast=false){
+ list.innerHTML=values.map((v,i)=>`<div class="item"><div class="inputWrap"><span class="num">${String(i+1).padStart(2,"0")}</span><input data-i="${i}" maxlength="30" value="${esc(v)}" placeholder="輸入項目名稱"></div><button class="del" data-i="${i}" title="刪除">×</button></div>`).join("");
+ add.disabled=values.length>=20;
+ list.querySelectorAll("input").forEach(x=>x.oninput=e=>{values[+e.target.dataset.i]=e.target.value;draw()});
+ list.querySelectorAll(".del").forEach(x=>x.onclick=e=>{if(spinning)return;values.splice(+e.currentTarget.dataset.i,1);renderInputs();draw()});
+ if(focusLast){let ins=list.querySelectorAll("input");ins[ins.length-1]?.focus();list.scrollTop=list.scrollHeight}
+}
+add.onclick=()=>{if(values.length<20&&!spinning){values.push("");renderInputs(true);draw()}};
+function active(){return values.map((v,i)=>({name:v.trim(),orig:i})).filter(x=>x.name)}
+function draw(){
+ const a=active(),n=a.length;ctx.clearRect(0,0,800,800);
+ if(!n){ctx.beginPath();ctx.arc(400,400,370,0,Math.PI*2);ctx.fillStyle="#eef0f6";ctx.fill();ctx.fillStyle="#9199aa";ctx.textAlign="center";ctx.font="800 27px sans-serif";ctx.fillText("請新增備選項目",400,400);spin.disabled=true;return}
+ spin.disabled=spinning;
+ const arc=2*Math.PI/n;
+ for(let i=0;i<n;i++){
+   const center=-Math.PI/2+i*arc, start=center-arc/2;
+   ctx.beginPath();ctx.moveTo(400,400);ctx.arc(400,400,370,start,start+arc);ctx.closePath();
+   ctx.fillStyle=palette[i%palette.length];ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=5;ctx.stroke();
+
+   // Horizontal text block. The block rotates with the sector, but the letters remain a normal horizontal line.
+   ctx.save();
+   ctx.translate(400,400);
+   ctx.rotate(center);
+   ctx.translate(255,0);
+   ctx.rotate(Math.PI/2); // explicit whole-label 90deg rotation
+   ctx.rotate(Math.PI/2);
+   ctx.fillStyle="#fff";ctx.shadowColor="#0004";ctx.shadowBlur=3;
+   ctx.textAlign="center";ctx.textBaseline="middle";
+   const fs=n>15?15:n>10?17:21;
+   ctx.font=`900 ${fs}px "Microsoft JhengHei",sans-serif`;
+   const max=n>15?8:n>10?10:13;
+   let label=[...a[i].name].length>max?[...a[i].name].slice(0,max-1).join("")+"…":a[i].name;
+   ctx.fillText(label,0,0);
+   ctx.restore();
+ }
+ ctx.beginPath();ctx.arc(400,400,377,0,2*Math.PI);ctx.strokeStyle="#fff";ctx.lineWidth=14;ctx.stroke();
+}
+function rnd(n){let x=new Uint32Array(1);crypto.getRandomValues(x);return x[0]%n}
+function party(){for(let i=0;i<65;i++){let e=document.createElement("i");e.className="confetti";e.style.left=Math.random()*100+"vw";e.style.background=palette[i%palette.length];e.style.setProperty("--x",(Math.random()*250-125)+"px");e.style.animationDelay=Math.random()*.3+"s";document.body.append(e);setTimeout(()=>e.remove(),2200)}}
+spin.onclick=()=>{let a=active();if(!a.length||spinning)return;spinning=true;editor.classList.add("spinning");draw();res.textContent="轉盤旋轉中…";
+ let win=rnd(a.length),step=360/a.length,target=270-win*step,current=((rotation%360)+360)%360,delta=((target-current)%360+360)%360;rotation+=360*(6+rnd(3))+delta;canvas.style.transform=`rotate(${rotation}deg)`;
+ // v14: real pointer animation. Previous versions only added CSS but never
+ // actually triggered the pointer animation from the spin handler.
+ let pointerTimer=null,pointerElapsed=0,pointerDelay=105;
+ function flickPointer(){
+   pointer.getAnimations().forEach(anim=>anim.cancel());
+   pointer.animate([
+     {transform:"translateY(-50%) rotate(0deg)"},
+     {transform:"translateY(-50%) rotate(-30deg)",offset:.30},
+     {transform:"translateY(-50%) rotate(12deg)",offset:.62},
+     {transform:"translateY(-50%) rotate(-4deg)",offset:.82},
+     {transform:"translateY(-50%) rotate(0deg)"}
+   ],{duration:185,easing:"ease-out"});
+   pointerElapsed+=pointerDelay;
+   if(pointerElapsed<5150){
+     if(pointerElapsed>2600) pointerDelay=Math.min(400,pointerDelay+22);
+     pointerTimer=setTimeout(flickPointer,pointerDelay);
+   }
+ }
+ flickPointer();
+ let idx=0,delay=70,elapsed=0,timer;
+ function pulse(){list.querySelectorAll(".item").forEach(x=>x.classList.remove("active"));let row=list.querySelector(`.item input[data-i="${a[idx%a.length].orig}"]`)?.closest(".item");row?.classList.add("active");idx++;elapsed+=delay;if(elapsed<4300){if(elapsed>2800)delay=Math.min(240,delay+18);timer=setTimeout(pulse,delay)}}
+ pulse();
+ setTimeout(()=>{clearTimeout(timer);clearTimeout(pointerTimer);list.querySelectorAll(".item").forEach(x=>x.classList.remove("active","winner"));let row=list.querySelector(`.item input[data-i="${a[win].orig}"]`)?.closest(".item");row?.classList.add("winner");row?.scrollIntoView({block:"nearest",behavior:"smooth"});
+ spinning=false;editor.classList.remove("spinning");spin.disabled=false;records.unshift(`${win+1}・${a[win].name}`);hist.innerHTML=records.slice(0,12).map((x,i)=>`<span class="chip">#${records.length-i} ${esc(x)}</span>`).join("");res.innerHTML=`🎊 抽中　${esc(a[win].name)}`;party();
+ if(document.querySelector("#remove").checked){setTimeout(()=>{values.splice(a[win].orig,1);renderInputs();draw()},900)}else draw()},5500)};
+async function loadOptions(){
+ try{
+   const response=await fetch(`options.json?v=${Date.now()}`,{cache:"no-store"});
+   if(!response.ok) throw new Error(`HTTP ${response.status}`);
+   const data=await response.json();
+   if(!data || !Array.isArray(data.items)) throw new Error("options.json 格式錯誤");
+   values=data.items.map(v=>String(v)).slice(0,20);
+   renderInputs(); draw();
+   res.textContent=values.some(v=>v.trim()) ? "準備好了嗎？" : "options.json 尚無選項";
+ }catch(err){
+   console.error("無法載入 options.json：",err);
+   values=[]; renderInputs(); draw();
+   res.textContent="無法載入 options.json";
+ }
+}
+loadOptions();
+setTimeout(()=>{pointer?.animate([
+ {transform:"translateY(-50%) rotate(0deg)"},
+ {transform:"translateY(-50%) rotate(-22deg)"},
+ {transform:"translateY(-50%) rotate(8deg)"},
+ {transform:"translateY(-50%) rotate(0deg)"}
+],{duration:500,easing:"ease-out"});},700);
+</script></body></html>
