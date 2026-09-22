@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lucky Spin v22</title>
+<title>Lucky Spin v26</title>
 <style>
 :root{--ink:#1f2740;--muted:#7b849c;--violet:#7657ee;--pink:#ff648c;--line:#e9e9f3}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef9ff 0%,#f6efff 47%,#fff8e4 100%);overflow-x:hidden}
@@ -16,7 +16,7 @@ header{text-align:center;padding:28px 16px 18px}h1{margin:0;font-size:clamp(32px
 .add{margin-top:14px;width:100%;height:48px;border:1.5px dashed #c8c1ee;border-radius:15px;background:#f9f8ff;color:#6957d9;font:900 14px inherit;cursor:pointer;transition:.18s}.add:hover{background:#f1eeff;border-color:#8c79e6}.add:disabled{opacity:.4;cursor:not-allowed}
 .bottom{margin-top:auto;padding-top:19px;border-top:1px solid #eeeef5}.toggle{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800}.switch{position:relative;width:46px;height:26px}.switch input{display:none}.slider{position:absolute;inset:0;background:#ddddea;border-radius:99px;cursor:pointer;transition:.2s}.slider:after{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:white;border-radius:50%;box-shadow:0 2px 6px #0002;transition:.2s}.switch input:checked+.slider{background:linear-gradient(90deg,#7760e9,#e9679a)}.switch input:checked+.slider:after{transform:translateX(20px)}
 .stage{min-height:650px;padding:27px;display:flex;flex-direction:column;align-items:center;justify-content:center}.wheelbox{position:relative;width:min(555px,73vw);aspect-ratio:1}.pointer{position:absolute;z-index:6;top:-19px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:38px solid #ed3e68;filter:drop-shadow(0 6px 4px #422c5b35)}.pointer:before,.pointer:after{display:none} /* tip points down into wheel */
-canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow(0 20px 24px #3642672c);transition:transform 5.4s cubic-bezier(.12,.64,.12,1)}
+canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow(0 20px 24px #3642672c);transition-property:transform;transition-duration:5.4s;transition-timing-function:cubic-bezier(.12,.64,.12,1)}
 .hub{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:118px;height:118px;border-radius:50%;background:#fff;border:9px solid #fff;box-shadow:0 10px 30px #34395b40,inset 0 0 0 2px #f0eff8;display:grid;place-items:center;font-size:20px;font-weight:1000;color:#6758d9;letter-spacing:.05em;overflow:hidden}.hub:before{content:"";position:absolute;inset:9px;border-radius:50%;background:linear-gradient(145deg,#fff,#f0eff8);z-index:-1}
 .spin{margin-top:22px;min-width:190px;height:54px;border:0;border-radius:999px;background:linear-gradient(100deg,#6b5ae5,#e85d95);color:#fff;font:1000 17px inherit;letter-spacing:.06em;box-shadow:0 12px 28px #765de34a;cursor:pointer;transition:.16s}.spin:hover{transform:translateY(-2px);box-shadow:0 15px 32px #765de358}.spin:disabled{opacity:.45;transform:none;cursor:not-allowed}
 .result{height:38px;margin-top:13px;font-weight:900;font-size:17px;text-align:center}.result strong{font-size:24px;color:#ed507d}
@@ -98,6 +98,34 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
   pointer-events:none!important;
   user-select:none!important;
 }
+
+.charge-ring{
+  --charge:0deg;
+  position:absolute;
+  z-index:7;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:138px;height:138px;border-radius:50%;
+  background:conic-gradient(#ffbe3f 0deg,#ed5f8d var(--charge),#eceaf3 var(--charge) 360deg);
+  box-shadow:0 5px 18px #422c5b22;
+  pointer-events:none;
+  opacity:.55;
+  transition:opacity .15s ease,transform .15s ease;
+}
+.charge-ring:after{
+  content:"";position:absolute;inset:7px;border-radius:50%;background:#fff;
+}
+.charge-ring.charging{opacity:1;transform:translate(-50%,-50%) scale(1.035)}
+.hub.charging{transform:translate(-50%,-50%) scale(.94)!important}
+
+.result-prize{
+  display:inline-block;
+  margin-left:.28em;
+  font-size:1.18em;
+  font-weight:900;
+  color:#e64f7a;
+  letter-spacing:.02em;
+}
 </style></head>
 <body>
 
@@ -109,7 +137,7 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
  <div class="bottom"><div class="toggle"><span>抽中後移除</span><label class="switch"><input type="checkbox" id="remove"><span class="slider"></span></label></div></div>
 </section>
 <section class="panel stage">
- <div class="wheelbox"><div class="pointer"><div class="pointer-tip"></div></div><canvas id="wheel" width="800" height="800"></canvas><button class="hub" id="spin" type="button" aria-label="開始轉動">
+ <div class="wheelbox"><div class="pointer"><div class="pointer-tip"></div></div><canvas id="wheel" width="800" height="800"></canvas><div class="charge-ring" id="chargeRing" aria-hidden="true"></div><button class="hub" id="spin" type="button" aria-label="開始轉動">
           <img src="image.png" alt="開始轉動">
         </button></div>
  <div class="result" id="result">準備好了嗎？</div>
@@ -160,77 +188,151 @@ function draw(){
 }
 function rnd(n){let x=new Uint32Array(1);crypto.getRandomValues(x);return x[0]%n}
 function party(){for(let i=0;i<65;i++){let e=document.createElement("i");e.className="confetti";e.style.left=Math.random()*100+"vw";e.style.background=palette[i%palette.length];e.style.setProperty("--x",(Math.random()*250-125)+"px");e.style.animationDelay=Math.random()*.3+"s";document.body.append(e);setTimeout(()=>e.remove(),2200)}}
-spin.onclick=()=>{let a=active();if(!a.length||spinning)return;spinning=true;editor.classList.add("spinning");draw();res.textContent="轉盤旋轉中…";
- let win=rnd(a.length),step=360/a.length,target=270-win*step,current=((rotation%360)+360)%360,delta=((target-current)%360+360)%360;rotation+=360*(6+rnd(3))+delta;canvas.style.transform=`rotate(${rotation}deg)`;
- // v18: pointer is flicked only when a white sector boundary passes it.
- // The wheel animation itself is CSS-based, so sample its computed transform
- // every animation frame and detect when the sector index at the pointer changes.
- let boundaryRAF=null,lastBoundaryIndex=null;
- const pointerTip=pointer;
- let audioCtx=null;
- function unlockAudio(){
-   try{
-     const AC=window.AudioContext||window.webkitAudioContext;
-     if(!AC) return;
-     if(!audioCtx) audioCtx=new AC();
-     if(audioCtx.state==="suspended") audioCtx.resume().catch(()=>{});
-   }catch(e){}
- }
- function playTick(){
-   try{
-     if(!audioCtx || audioCtx.state!=="running") return;
-     const now=audioCtx.currentTime;
-     const osc=audioCtx.createOscillator();
-     const gain=audioCtx.createGain();
-     osc.type="square";
-     osc.frequency.setValueAtTime(700,now);
-     osc.frequency.exponentialRampToValueAtTime(230,now+.025);
-     gain.gain.setValueAtTime(.045,now);
-     gain.gain.exponentialRampToValueAtTime(.001,now+.035);
-     osc.connect(gain); gain.connect(audioCtx.destination);
-     osc.start(now); osc.stop(now+.04);
-   }catch(e){}
- }
- function flickPointer(){
-   playTick();
-   pointerTip.getAnimations().forEach(anim=>anim.cancel());
-   pointerTip.animate([
-     {transform:"rotate(0deg)"},
-     {transform:"rotate(-24deg)",offset:.32},
-     {transform:"rotate(9deg)",offset:.68},
-     {transform:"rotate(0deg)"}
-   ],{duration:125,easing:"ease-out"});
- }
- function currentWheelAngle(){
-   const tr=getComputedStyle(canvas).transform;
-   if(!tr || tr==="none") return 0;
-   const m=new DOMMatrixReadOnly(tr);
-   let deg=Math.atan2(m.b,m.a)*180/Math.PI;
-   return (deg+360)%360;
- }
- function watchSectorBoundaries(){
-   const count=active().length;
-   if(!spinning || count<2) return;
-   const step=360/count;
-   const ang=currentWheelAngle();
-   // Boundaries cross the fixed left pointer every "step" degrees.
-   const boundaryIndex=Math.floor(((ang+step/2)%360)/step);
-   if(lastBoundaryIndex===null) lastBoundaryIndex=boundaryIndex;
-   else if(boundaryIndex!==lastBoundaryIndex){
-     flickPointer();
-     lastBoundaryIndex=boundaryIndex;
-   }
-   boundaryRAF=requestAnimationFrame(watchSectorBoundaries);
- }
- lastBoundaryIndex=null;
- cancelAnimationFrame(boundaryRAF);
- boundaryRAF=requestAnimationFrame(watchSectorBoundaries);
- let idx=0,delay=70,elapsed=0,timer;
- function pulse(){list.querySelectorAll(".item").forEach(x=>x.classList.remove("active"));let row=list.querySelector(`.item input[data-i="${a[idx%a.length].orig}"]`)?.closest(".item");row?.classList.add("active");idx++;elapsed+=delay;if(elapsed<4300){if(elapsed>2800)delay=Math.min(240,delay+18);timer=setTimeout(pulse,delay)}}
- pulse();
- setTimeout(()=>{clearTimeout(timer);cancelAnimationFrame(boundaryRAF);list.querySelectorAll(".item").forEach(x=>x.classList.remove("active","winner"));let row=list.querySelector(`.item input[data-i="${a[win].orig}"]`)?.closest(".item");row?.classList.add("winner");row?.scrollIntoView({block:"nearest",behavior:"smooth"});
- spinning=false;editor.classList.remove("spinning");spin.disabled=false;records.unshift(`${win+1}・${a[win].name}`);hist.innerHTML=records.slice(0,12).map((x,i)=>`<span class="chip">#${records.length-i} ${esc(x)}</span>`).join("");res.innerHTML=`🎊 抽中　${esc(a[win].name)}`;party();
- if(document.querySelector("#remove").checked){setTimeout(()=>{values.splice(a[win].orig,1);renderInputs();draw()},900)}else draw()},5500)};
+// User supplied tick sound: global pool so pointerdown can unlock it reliably.
+const tickPool=Array.from({length:10},()=>{
+  const a=new Audio("tick.wav");
+  a.preload="auto";
+  a.volume=.72;
+  return a;
+});
+let tickCursor=0;
+function unlockAudio(){
+  const a=tickPool[0];
+  try{
+    a.muted=true;
+    const p=a.play();
+    if(p&&p.then)p.then(()=>{a.pause();a.currentTime=0;a.muted=false}).catch(()=>{a.muted=false});
+  }catch(e){a.muted=false}
+}
+function playTick(){
+  const a=tickPool[tickCursor++%tickPool.length];
+  try{a.pause();a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}
+}
+function flickPointer(){
+  playTick();
+  pointer.getAnimations().forEach(anim=>anim.cancel());
+  pointer.animate([
+    {transform:"rotate(0deg)"},
+    {transform:"rotate(-24deg)",offset:.32},
+    {transform:"rotate(9deg)",offset:.68},
+    {transform:"rotate(0deg)"}
+  ],{duration:125,easing:"ease-out"});
+}
+function currentWheelAngle(){
+  const tr=getComputedStyle(canvas).transform;
+  if(!tr||tr==="none")return 0;
+  const m=new DOMMatrixReadOnly(tr);
+  return (Math.atan2(m.b,m.a)*180/Math.PI+360)%360;
+}
+
+let boundaryRAF=null,lastBoundaryIndex=null;
+function watchSectorBoundaries(){
+  const count=active().length;
+  if(!spinning||count<2)return;
+  const step=360/count,ang=currentWheelAngle();
+  const boundaryIndex=Math.floor(((ang+step/2)%360)/step);
+  if(lastBoundaryIndex===null)lastBoundaryIndex=boundaryIndex;
+  else if(boundaryIndex!==lastBoundaryIndex){flickPointer();lastBoundaryIndex=boundaryIndex}
+  boundaryRAF=requestAnimationFrame(watchSectorBoundaries);
+}
+
+function startSpin(power){
+  const a=active();
+  if(!a.length||spinning)return;
+  power=Math.max(.06,Math.min(1,power));
+  spinning=true;editor.classList.add("spinning");draw();res.textContent="轉盤旋轉中…";
+
+  // Random result stays independent of charge strength.
+  const win=rnd(a.length),step=360/a.length,target=270-win*step;
+  const current=((rotation%360)+360)%360;
+  const delta=((target-current)%360+360)%360;
+
+  // Charge controls only animation strength: ~2.5–7.0 sec and ~3–12 turns.
+  const duration=2500+power*4500;
+  const turns=Math.round(3+power*9);
+  rotation+=360*turns+delta;
+  canvas.style.transitionDuration=duration+"ms";
+  canvas.style.transform=`rotate(${rotation}deg)`;
+
+  lastBoundaryIndex=null;
+  cancelAnimationFrame(boundaryRAF);
+  boundaryRAF=requestAnimationFrame(watchSectorBoundaries);
+
+  let idx=0,delay=55,elapsed=0,timer;
+  function pulse(){
+    list.querySelectorAll(".item").forEach(x=>x.classList.remove("active"));
+    const row=list.querySelector(`.item input[data-i="${a[idx%a.length].orig}"]`)?.closest(".item");
+    row?.classList.add("active");idx++;elapsed+=delay;
+    const slowAt=duration*.58;
+    if(elapsed<duration-180){
+      if(elapsed>slowAt)delay=Math.min(260,delay+16);
+      timer=setTimeout(pulse,delay);
+    }
+  }
+  pulse();
+
+  setTimeout(()=>{
+    clearTimeout(timer);cancelAnimationFrame(boundaryRAF);
+    list.querySelectorAll(".item").forEach(x=>x.classList.remove("active","winner"));
+    const row=list.querySelector(`.item input[data-i="${a[win].orig}"]`)?.closest(".item");
+    row?.classList.add("winner");row?.scrollIntoView({block:"nearest",behavior:"smooth"});
+    spinning=false;editor.classList.remove("spinning");spin.disabled=false;
+    records.unshift(`${win+1}・${a[win].name}`);
+    hist.innerHTML=records.slice(0,12).map((x,i)=>`<span class="chip">#${records.length-i} ${esc(x)}</span>`).join("");
+    res.innerHTML=`🎊 抽中 <span class="result-prize">${esc(a[win].name)}</span>`;party();
+    if(document.querySelector("#remove").checked){
+      setTimeout(()=>{values.splice(a[win].orig,1);renderInputs();draw()},900)
+    }else draw();
+  },duration+120);
+}
+
+// Hold the elephant to charge; release to spin.
+const chargeRing=document.getElementById("chargeRing");
+let charging=false,chargeStart=0,chargeRAF=null,chargePower=0;
+const MAX_CHARGE_MS=1800;
+
+function paintCharge(){
+  if(!charging)return;
+  chargePower=Math.min(1,(performance.now()-chargeStart)/MAX_CHARGE_MS);
+  chargeRing.style.setProperty("--charge",(chargePower*360)+"deg");
+  chargeRAF=requestAnimationFrame(paintCharge);
+}
+function beginCharge(e){
+  if(spinning||!active().length)return;
+  if(e&&e.button!==undefined&&e.button!==0)return;
+  unlockAudio();
+  charging=true;chargeStart=performance.now();chargePower=.06;
+  chargeRing.classList.add("charging");spin.classList.add("charging");
+  chargeRing.style.setProperty("--charge","20deg");
+  if(e&&e.pointerId!==undefined){try{spin.setPointerCapture(e.pointerId)}catch(_){}}
+  cancelAnimationFrame(chargeRAF);chargeRAF=requestAnimationFrame(paintCharge);
+}
+function releaseCharge(){
+  if(!charging)return;
+  charging=false;cancelAnimationFrame(chargeRAF);
+  chargePower=Math.max(.06,Math.min(1,(performance.now()-chargeStart)/MAX_CHARGE_MS));
+  chargeRing.classList.remove("charging");spin.classList.remove("charging");
+  chargeRing.style.setProperty("--charge","0deg");
+  startSpin(chargePower);
+}
+function cancelCharge(){
+  if(!charging)return;
+  charging=false;cancelAnimationFrame(chargeRAF);
+  chargeRing.classList.remove("charging");spin.classList.remove("charging");
+  chargeRing.style.setProperty("--charge","0deg");
+}
+
+spin.addEventListener("pointerdown",beginCharge);
+spin.addEventListener("pointerup",releaseCharge);
+spin.addEventListener("pointercancel",cancelCharge);
+spin.addEventListener("lostpointercapture",()=>{if(charging)releaseCharge()});
+spin.addEventListener("contextmenu",e=>e.preventDefault());
+spin.addEventListener("keydown",e=>{
+  if((e.code==="Space"||e.code==="Enter")&&!e.repeat){e.preventDefault();beginCharge(e)}
+});
+spin.addEventListener("keyup",e=>{
+  if(e.code==="Space"||e.code==="Enter"){e.preventDefault();releaseCharge()}
+});
 async function loadOptions(){
  try{
    const response=await fetch(`options.json?v=${Date.now()}`,{cache:"no-store"});
@@ -254,10 +356,4 @@ setTimeout(()=>{pointer?.animate([
  {transform:"rotate(0deg)"}
 ],{duration:500,easing:"ease-out"});},700);
 
-// v22: audio initialization is isolated from the spin handler.
-// Even if Web Audio is unavailable, the wheel click behavior remains untouched.
-const centerSpinControl=document.getElementById("spin");
-if(centerSpinControl){
-  centerSpinControl.addEventListener("pointerdown",unlockAudio,{passive:true});
-}
 </script></body></html>
