@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lucky Spin v18</title>
+<title>Lucky Spin v20</title>
 <style>
 :root{--ink:#1f2740;--muted:#7b849c;--violet:#7657ee;--pink:#ff648c;--line:#e9e9f3}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef9ff 0%,#f6efff 47%,#fff8e4 100%);overflow-x:hidden}
@@ -29,7 +29,7 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
 .pointer{
   position:absolute!important;
   z-index:20!important;
-  left:2px!important;
+  left:-14px!important;
   right:auto!important;
   top:50%!important;
   bottom:auto!important;
@@ -51,7 +51,7 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
   position:absolute;
   left:0;
   top:4px;
-  width:56px;
+  width:50px;
   height:34px;
   background:#ed3e68;
   clip-path:polygon(0 0,100% 50%,0 100%);
@@ -65,6 +65,39 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
   content:none!important;
   display:none!important;
 }
+
+/* v20: center elephant image is the SPIN button */
+.hub{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  width:118px!important;
+  height:118px!important;
+  padding:0!important;
+  border:7px solid #fff!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  background:#fff!important;
+  cursor:pointer!important;
+  z-index:15!important;
+  box-shadow:0 5px 18px #422c5b35!important;
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  transition:transform .16s ease,box-shadow .16s ease!important;
+}
+.hub:hover{transform:translate(-50%,-50%) scale(1.045)!important;box-shadow:0 7px 22px #422c5b45!important}
+.hub:active{transform:translate(-50%,-50%) scale(.94)!important}
+.hub:disabled{cursor:not-allowed!important;filter:saturate(.72) brightness(.96)!important}
+.hub img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  user-select:none!important;
+}
 </style></head>
 <body>
 
@@ -76,8 +109,10 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
  <div class="bottom"><div class="toggle"><span>抽中後移除</span><label class="switch"><input type="checkbox" id="remove"><span class="slider"></span></label></div></div>
 </section>
 <section class="panel stage">
- <div class="wheelbox"><div class="pointer"><div class="pointer-tip"></div></div><canvas id="wheel" width="800" height="800"></canvas><div class="hub">SPIN</div></div>
- <button class="spin" id="spin">開始轉動</button><div class="result" id="result">準備好了嗎？</div>
+ <div class="wheelbox"><div class="pointer"><div class="pointer-tip"></div></div><canvas id="wheel" width="800" height="800"></canvas><button class="hub" id="spin" type="button" aria-label="開始轉動">
+          <img src="image.png" alt="開始轉動">
+        </button></div>
+ <div class="result" id="result">準備好了嗎？</div>
 </section>
 </main>
 <section class="history"><div class="panel"><h2>抽選紀錄</h2><div class="chips" id="history"><span class="empty">尚無紀錄</span></div></div></section>
@@ -131,7 +166,7 @@ spin.onclick=()=>{let a=active();if(!a.length||spinning)return;spinning=true;edi
  // The wheel animation itself is CSS-based, so sample its computed transform
  // every animation frame and detect when the sector index at the pointer changes.
  let boundaryRAF=null,lastBoundaryIndex=null;
- const pointerTip=pointer.querySelector(".pointer-tip");
+ const pointerTip=pointer;
  function flickPointer(){
    pointerTip.getAnimations().forEach(anim=>anim.cancel());
    pointerTip.animate([
@@ -139,7 +174,7 @@ spin.onclick=()=>{let a=active();if(!a.length||spinning)return;spinning=true;edi
      {transform:"rotate(-24deg)",offset:.32},
      {transform:"rotate(9deg)",offset:.68},
      {transform:"rotate(0deg)"}
-   ],{duration:150,easing:"ease-out"});
+   ],{duration:125,easing:"ease-out"});
  }
  function currentWheelAngle(){
    const tr=getComputedStyle(canvas).transform;
