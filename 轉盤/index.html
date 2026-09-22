@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lucky Spin v16</title>
+<title>Lucky Spin v18</title>
 <style>
 :root{--ink:#1f2740;--muted:#7b849c;--violet:#7657ee;--pink:#ff648c;--line:#e9e9f3}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef9ff 0%,#f6efff 47%,#fff8e4 100%);overflow-x:hidden}
@@ -24,27 +24,47 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
 .confetti{position:fixed;top:-20px;width:9px;height:15px;z-index:20;animation:fall 1.8s linear forwards}@keyframes fall{to{transform:translate(var(--x),105vh) rotate(720deg);opacity:.2}}
 @media(max-width:850px){.shell{grid-template-columns:1fr}.stage{order:-1;min-height:auto}.editor{min-height:500px}.wheelbox{width:min(86vw,530px)}}
 
-/* v16 pointer: wrapper handles positioning; inner tip handles rotation */
+/* v17 pointer: one clean pointer only.
+   The wrapper only positions the pointer; the inner tip alone is animated. */
 .pointer{
-  position:absolute!important; z-index:20!important;
-  left:4px!important; right:auto!important;
-  top:50%!important; bottom:auto!important;
+  position:absolute!important;
+  z-index:20!important;
+  left:2px!important;
+  right:auto!important;
+  top:50%!important;
+  bottom:auto!important;
   transform:translateY(-50%)!important;
-  width:52px!important; height:52px!important;
+  width:58px!important;
+  height:42px!important;
+
+  /* IMPORTANT: erase every triangle style inherited from the old pointer */
+  border:0!important;
+  border-left:0!important;
+  border-right:0!important;
+  border-top:0!important;
+  border-bottom:0!important;
+  filter:none!important;
+  background:transparent!important;
   pointer-events:none!important;
 }
 .pointer-tip{
-  position:absolute; left:0; top:50%;
-  width:0; height:0;
-  border-top:20px solid transparent;
-  border-bottom:20px solid transparent;
-  border-left:48px solid #ed3e68;
-  filter:drop-shadow(5px 0 4px #422c5b35);
-  transform:translateY(-50%) rotate(0deg);
-  transform-origin:6px 50%;
+  position:absolute;
+  left:0;
+  top:4px;
+  width:56px;
+  height:34px;
+  background:#ed3e68;
+  clip-path:polygon(0 0,100% 50%,0 100%);
+  filter:drop-shadow(4px 2px 3px #422c5b35);
+  transform:rotate(0deg);
+  transform-origin:5px 50%;
   will-change:transform;
 }
-.pointer:before,.pointer:after{display:none!important}
+.pointer:before,.pointer:after,
+.pointer-tip:before,.pointer-tip:after{
+  content:none!important;
+  display:none!important;
+}
 </style></head>
 <body>
 
@@ -107,29 +127,48 @@ function rnd(n){let x=new Uint32Array(1);crypto.getRandomValues(x);return x[0]%n
 function party(){for(let i=0;i<65;i++){let e=document.createElement("i");e.className="confetti";e.style.left=Math.random()*100+"vw";e.style.background=palette[i%palette.length];e.style.setProperty("--x",(Math.random()*250-125)+"px");e.style.animationDelay=Math.random()*.3+"s";document.body.append(e);setTimeout(()=>e.remove(),2200)}}
 spin.onclick=()=>{let a=active();if(!a.length||spinning)return;spinning=true;editor.classList.add("spinning");draw();res.textContent="轉盤旋轉中…";
  let win=rnd(a.length),step=360/a.length,target=270-win*step,current=((rotation%360)+360)%360,delta=((target-current)%360+360)%360;rotation+=360*(6+rnd(3))+delta;canvas.style.transform=`rotate(${rotation}deg)`;
- // v14: real pointer animation. Previous versions only added CSS but never
- // actually triggered the pointer animation from the spin handler.
- let pointerTimer=null,pointerElapsed=0,pointerDelay=105;
+ // v18: pointer is flicked only when a white sector boundary passes it.
+ // The wheel animation itself is CSS-based, so sample its computed transform
+ // every animation frame and detect when the sector index at the pointer changes.
+ let boundaryRAF=null,lastBoundaryIndex=null;
+ const pointerTip=pointer.querySelector(".pointer-tip");
  function flickPointer(){
-   pointer.getAnimations().forEach(anim=>anim.cancel());
-   pointer.animate([
-     {transform:"translateY(-50%) rotate(0deg)"},
-     {transform:"translateY(-50%) rotate(-30deg)",offset:.30},
-     {transform:"translateY(-50%) rotate(12deg)",offset:.62},
-     {transform:"translateY(-50%) rotate(-4deg)",offset:.82},
-     {transform:"translateY(-50%) rotate(0deg)"}
-   ],{duration:185,easing:"ease-out"});
-   pointerElapsed+=pointerDelay;
-   if(pointerElapsed<5150){
-     if(pointerElapsed>2600) pointerDelay=Math.min(400,pointerDelay+22);
-     pointerTimer=setTimeout(flickPointer,pointerDelay);
-   }
+   pointerTip.getAnimations().forEach(anim=>anim.cancel());
+   pointerTip.animate([
+     {transform:"rotate(0deg)"},
+     {transform:"rotate(-24deg)",offset:.32},
+     {transform:"rotate(9deg)",offset:.68},
+     {transform:"rotate(0deg)"}
+   ],{duration:150,easing:"ease-out"});
  }
- flickPointer();
+ function currentWheelAngle(){
+   const tr=getComputedStyle(canvas).transform;
+   if(!tr || tr==="none") return 0;
+   const m=new DOMMatrixReadOnly(tr);
+   let deg=Math.atan2(m.b,m.a)*180/Math.PI;
+   return (deg+360)%360;
+ }
+ function watchSectorBoundaries(){
+   const count=active().length;
+   if(!spinning || count<2) return;
+   const step=360/count;
+   const ang=currentWheelAngle();
+   // Boundaries cross the fixed left pointer every "step" degrees.
+   const boundaryIndex=Math.floor(((ang+step/2)%360)/step);
+   if(lastBoundaryIndex===null) lastBoundaryIndex=boundaryIndex;
+   else if(boundaryIndex!==lastBoundaryIndex){
+     flickPointer();
+     lastBoundaryIndex=boundaryIndex;
+   }
+   boundaryRAF=requestAnimationFrame(watchSectorBoundaries);
+ }
+ lastBoundaryIndex=null;
+ cancelAnimationFrame(boundaryRAF);
+ boundaryRAF=requestAnimationFrame(watchSectorBoundaries);
  let idx=0,delay=70,elapsed=0,timer;
  function pulse(){list.querySelectorAll(".item").forEach(x=>x.classList.remove("active"));let row=list.querySelector(`.item input[data-i="${a[idx%a.length].orig}"]`)?.closest(".item");row?.classList.add("active");idx++;elapsed+=delay;if(elapsed<4300){if(elapsed>2800)delay=Math.min(240,delay+18);timer=setTimeout(pulse,delay)}}
  pulse();
- setTimeout(()=>{clearTimeout(timer);clearTimeout(pointerTimer);list.querySelectorAll(".item").forEach(x=>x.classList.remove("active","winner"));let row=list.querySelector(`.item input[data-i="${a[win].orig}"]`)?.closest(".item");row?.classList.add("winner");row?.scrollIntoView({block:"nearest",behavior:"smooth"});
+ setTimeout(()=>{clearTimeout(timer);cancelAnimationFrame(boundaryRAF);list.querySelectorAll(".item").forEach(x=>x.classList.remove("active","winner"));let row=list.querySelector(`.item input[data-i="${a[win].orig}"]`)?.closest(".item");row?.classList.add("winner");row?.scrollIntoView({block:"nearest",behavior:"smooth"});
  spinning=false;editor.classList.remove("spinning");spin.disabled=false;records.unshift(`${win+1}・${a[win].name}`);hist.innerHTML=records.slice(0,12).map((x,i)=>`<span class="chip">#${records.length-i} ${esc(x)}</span>`).join("");res.innerHTML=`🎊 抽中　${esc(a[win].name)}`;party();
  if(document.querySelector("#remove").checked){setTimeout(()=>{values.splice(a[win].orig,1);renderInputs();draw()},900)}else draw()},5500)};
 async function loadOptions(){
@@ -149,9 +188,9 @@ async function loadOptions(){
 }
 loadOptions();
 setTimeout(()=>{pointer?.animate([
- {transform:"translateY(-50%) rotate(0deg)"},
- {transform:"translateY(-50%) rotate(-22deg)"},
- {transform:"translateY(-50%) rotate(8deg)"},
- {transform:"translateY(-50%) rotate(0deg)"}
+ {transform:"rotate(0deg)"},
+ {transform:"rotate(-22deg)"},
+ {transform:"rotate(8deg)"},
+ {transform:"rotate(0deg)"}
 ],{duration:500,easing:"ease-out"});},700);
 </script></body></html>
