@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lucky Spin v11</title>
+<title>Lucky Spin v16</title>
 <style>
 :root{--ink:#1f2740;--muted:#7b849c;--violet:#7657ee;--pink:#ff648c;--line:#e9e9f3}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:linear-gradient(135deg,#eef9ff 0%,#f6efff 47%,#fff8e4 100%);overflow-x:hidden}
@@ -24,18 +24,25 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
 .confetti{position:fixed;top:-20px;width:9px;height:15px;z-index:20;animation:fall 1.8s linear forwards}@keyframes fall{to{transform:translate(var(--x),105vh) rotate(720deg);opacity:.2}}
 @media(max-width:850px){.shell{grid-template-columns:1fr}.stage{order:-1;min-height:auto}.editor{min-height:500px}.wheelbox{width:min(86vw,530px)}}
 
-/* v9 hard overrides */
+/* v16 pointer: wrapper handles positioning; inner tip handles rotation */
 .pointer{
   position:absolute!important; z-index:20!important;
-  left:-22px!important; right:auto!important;
+  left:4px!important; right:auto!important;
   top:50%!important; bottom:auto!important;
   transform:translateY(-50%)!important;
-  width:0!important; height:0!important;
-  border-top:18px solid transparent!important;
-  border-bottom:18px solid transparent!important;
-  border-left:40px solid #ed3e68!important;
-  border-right:0!important;
-  filter:drop-shadow(5px 0 4px #422c5b35)!important;
+  width:52px!important; height:52px!important;
+  pointer-events:none!important;
+}
+.pointer-tip{
+  position:absolute; left:0; top:50%;
+  width:0; height:0;
+  border-top:20px solid transparent;
+  border-bottom:20px solid transparent;
+  border-left:48px solid #ed3e68;
+  filter:drop-shadow(5px 0 4px #422c5b35);
+  transform:translateY(-50%) rotate(0deg);
+  transform-origin:6px 50%;
+  will-change:transform;
 }
 .pointer:before,.pointer:after{display:none!important}
 </style></head>
@@ -49,14 +56,14 @@ canvas{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow
  <div class="bottom"><div class="toggle"><span>抽中後移除</span><label class="switch"><input type="checkbox" id="remove"><span class="slider"></span></label></div></div>
 </section>
 <section class="panel stage">
- <div class="wheelbox"><div class="pointer"></div><canvas id="wheel" width="800" height="800"></canvas><div class="hub">SPIN</div></div>
+ <div class="wheelbox"><div class="pointer"><div class="pointer-tip"></div></div><canvas id="wheel" width="800" height="800"></canvas><div class="hub">SPIN</div></div>
  <button class="spin" id="spin">開始轉動</button><div class="result" id="result">準備好了嗎？</div>
 </section>
 </main>
 <section class="history"><div class="panel"><h2>抽選紀錄</h2><div class="chips" id="history"><span class="empty">尚無紀錄</span></div></div></section>
 <script>
 const palette=["#ff657d","#ffad4d","#f3cf4d","#69cf98","#54bfe0","#7184ef","#9a70e8","#e76fb1","#ff8860","#83c96b"];
-const pointer=document.querySelector(".pointer"),editor=document.querySelector(".editor"),list=document.querySelector("#items"),add=document.querySelector("#add"),canvas=document.querySelector("#wheel"),ctx=canvas.getContext("2d"),spin=document.querySelector("#spin"),res=document.querySelector("#result"),hist=document.querySelector("#history");
+const pointer=document.querySelector(".pointer-tip"),editor=document.querySelector(".editor"),list=document.querySelector("#items"),add=document.querySelector("#add"),canvas=document.querySelector("#wheel"),ctx=canvas.getContext("2d"),spin=document.querySelector("#spin"),res=document.querySelector("#result"),hist=document.querySelector("#history");
 let values=[],rotation=0,spinning=false,records=[];
 function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function renderInputs(focusLast=false){
